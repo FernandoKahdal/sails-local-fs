@@ -237,17 +237,20 @@ var Adapter = function (adapter) {
 		options.decoding = options.decoding || 'utf8';
 
 		// Get source stream from adapter
-		var fileStream = adapter.read(new DownloadStream(), options, cb);
+		var downloadStream = adapter.read(new DownloadStream(), options, cb);
 
 		// If destination stream was passed in, pipe data directly to it
 		if (destinationStream) {
-			fileStream.pipe(destinationStream);
+			downloadStream.pipe(destinationStream);
+
+			// Save reference to destination stream for compatibility checking
+			downloadStream.destinationStream = destinationStream;
 		}
 
 		// Call the wrapped adapter upload logic
 		// Return file stream to allow for chaining
 		////////////////////////////////////////////////////////////
-		return fileStream;
+		return downloadStream;
 		////////////////////////////////////////////////////////////
 
 	};

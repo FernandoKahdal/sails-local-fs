@@ -5,7 +5,8 @@
 var inherits	= require('util').inherits,
 	Stream		= require('stream'),
 	_			= require('lodash'),
-	archiver	= require('archiver');
+	archiver	= require('archiver'),
+	mime		= require('mime');
 
 
 // TODO: 
@@ -60,6 +61,8 @@ function DownloadStream () {
 		error: console.error
 	};
 
+	// If multiple files are downloaded as a zip, the filename for the archive
+	var archiveFileName = 'download.zip';
 
 	var self = this;
 
@@ -97,7 +100,7 @@ function DownloadStream () {
 	 * End the stream
 	 */
 	this.end = function () {
-		log.verbose('Ending download stream...');
+		log('Ending download stream...');
 		this.emit('end');
 	};
 
@@ -126,9 +129,9 @@ function DownloadStream () {
 
 		// Replay the buffered bytes onto the downloadStream
 		else {
-			log.verbose('Replaying buffered bytes of file...');
+			log('Replaying buffered bytes and downloading the first file...');
 			firstFile.pipe(self);
-			firstFile.resume();
+			// firstFile.resume();
 		}
 
 	};
@@ -170,10 +173,8 @@ function DownloadStream () {
 		// when they are all finished, the zip can be finalized at this point
 		log('Finalizing zip of ' + fileCount + ' files...');
 		self.zipstream.finalize(function(err, written) {
-			log('Zip archive finalized!');
 			if (err) throw err;
-
-			console.log(written + ' total bytes written TO ZIP!!!');
+			log(written + ' total bytes written to zip archive.');
 		});
 	});
 
@@ -185,7 +186,8 @@ function DownloadStream () {
 
 	this.on('file', function (incomingFileStream) {
 
-		log('Discovered file :: ', incomingFileStream.filename);
+		incomingFileStream.index = fileCount;
+		log('Discovered file #' + incomingFileStream.index + ' (' + incomingFileStream.filename + ')');
 
 		// Manage file count and limits
 		if (limitFileCount && fileCount >= limitFileCount ) {
@@ -227,22 +229,38 @@ function DownloadStream () {
 			// and start zipping them up
 			this.zipstream = archiver('zip');
 
+			// Handle name and MIME type if stream supports it
+			log.verbose('Creating zip...');
+			if (this.destinationStream.set) {
+				log.verbose('Setting headers...');
+				var mimetype = mime.lookup('.zip');
+				this.destinationStream.set({
+					'Content-type': mimetype,
+					'Content-disposition': 'attachment; filename=' + archiveFileName
+				});
+			}
+
 			// Set up zipstream to pipe to download
-			this.zipstream.pipe(self);
 			this.zipstream.on('error', function(err) {
 			  throw err;
 			});
+			this.zipstream.pipe(self);
+
 
 			// Replay buffered bytes of first file into zip
 			log('Writing ' + firstFile.filename + ' to zipstream...');
-			this.zipstream.append( firstFile , { name: firstFile.filename });
-			firstFile.resume();
+			this.zipstream.append( firstFile , { name: firstFile.filename }, function (err) {
+				console.log('First file (' + firstFile.filename + ') written successfully!', err);
+			});
+			// firstFile.resume();
 		}
 
 
 		// For every file discovered after the first, just zip and stream it
 		log('Writing ' + incomingFileStream.filename + ' to zipstream...');
-		this.zipstream.append( incomingFileStream , { name: incomingFileStream.filename });
+		this.zipstream.append( incomingFileStream , { name: incomingFileStream.filename }, function (err) {
+			console.log('File #' + incomingFileStream.index +'  (' + incomingFileStream.filename + ') written successfully!', err);
+		});
 
 	});
 
