@@ -85,19 +85,85 @@ function DownloadStream () {
 	 * Server error occurred
 	 */
 	this.error = function (err) {
-		this.emit('end', err);
+		this.emit('error', err);
+	};
+
+	// File exceeds download count limit, 
+	// or violates a consistentcy expectation
+	this.unexpectedFile = function () {
+		this.emit('error', errors.unexpectedFile);
 	};
 
 
-	
+	// If no more files arive, start streaming the bytes 
+	// of the first file immediately
+	this.onlyOneFile = function () {
+
+		// Clear download timer
+		clearTimeout(downloadTimer);
+
+		// Prevent any unexpected additional downloads from surprising us
+		limitFileCount = 1;
+
+		// Replay the buffered bytes onto the downloadStream
+		firstFile.pipe(this);
+		firstFile.resume();
+	};
+
+
+
+
+
+
+
+	// Keep track of first file in case this is a single-file download
+	var firstFile;
+
+
+	// If the download timer expires, we must assume no other files are coming
+	// so send back the single file
+	var downloadTimer = setTimeout(function expire () {
+		onlyOneFile();
+	}, 50);
+
+	// If the download (glob) stream ends
+	this.on('end', function () {
+
+		if (fileCount === 1) {
+			onlyOneFile();
+			return;
+		}
+
+		// if > 1 file is being downloaded,
+		// when they are all finished, the zip can be finalized at this point
+		throw new Error('Zip doesn\'t work yet!!!');
+		// zip.finalize();
+	});
+
 
 	/**
 	 * Receive a file on the download stream
 	 */
 
-	this.on('file', function (bytesIn) {
+	this.on('file', function (incomingFileStream) {
 
-		var downloadStream = this;
+		// If this is the first file
+		if (fileCount === 0) {
+
+			// Buffer and track it
+			firstFile = incomingFileStream;
+			firstFile.pause();
+			
+			// Continue buffering the first file until:
+			//
+			//	+ we find more files, then create a zip
+			//	-or-
+			//	+ the stream ends, so we download the first file
+			//	-or-
+			//	+ multiple download timeout expires (50ms) 
+			//	  so we download the first file
+		}
+
 
 		// Manage file count and limits
 		if (limitFileCount && fileCount >= limitFileCount ) {
@@ -105,38 +171,37 @@ function DownloadStream () {
 		}
 		fileCount++;
 
+		// If this is the second file, this is the moment where, for the first time,
+		// we can be certain that more than one file is being downloaded.
+		// Immediately stop buffering the first file and set up the .zip
+		if (fileCount === 2) {
+			
+			// Clear download timer
+			// (since we are now sure that > 1 file is being downloaded)
+			clearTimeout(downloadTimer);
 
-		// TODO:	Continue buffering the first file until:
-		//				+ we find more files
-		//				+ multiple download timeout expires (50ms)
-		//					(in other words, we don't think any more files are coming)
-		onlyOneFile(bytesIn);
+			// Since multiple files are detected, create an archive
+			// and start zipping them up
+			throw new Error('Zip doesn\'t work yet!!!');
 
+			// Replay buffered bytes of first file into zip
 
-		// TODO:	If multiple files are detected, create an archive
-		//			and start zipping them up
-		
-		// var zip = zipstream.createZip({ level: 1 });
-		// zip.addFile(fs.createReadStream('README.md'), { name: 'README.md' }, function() {
-		//   zip.addFile(fs.createReadStream('example.js'), { name: 'example.js'  }, function() {
-		//     zip.finalize(function(written) { console.log(written + ' total bytes written'); });
-		//   });
-		// });
-		// zip.pipe(outputStream);
-
-		// If no more files arive, start streaming the bytes 
-		// of the first file immediately
-		function onlyOneFile () {
-			limitFileCount = 1;
-			bytesIn.pipe(downloadStream);
+			// Zip and stream each subsequent file
+			// var zip = zipstream.createZip({ level: 1 });
+			// zip.addFile(fs.createReadStream('README.md'), { name: 'README.md' }, function() {
+			//   zip.addFile(fs.createReadStream('example.js'), { name: 'example.js'  }, function() {
+			//     zip.finalize(function(written) { console.log(written + ' total bytes written'); });
+			//   });
+			// });
+			// zip.pipe(outputStream);
 		}
 
-		// File exceeds download count limit, 
-		// or violates a consistentcy expectation
-		function unexpectedFile () {
-			downloadStream.emit('error', errors.unexpectedFile);
+		// For each subsequent file, zip and stream
+		else {
+			throw new Error('Zip doesn\'t work yet!!!');
 		}
 
 	});
 
+	
 }
