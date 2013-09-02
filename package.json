@@ -27,7 +27,8 @@
   "dependencies": {
     "lodash": "1.2.1",
     "glob": "3.2.6",
-    "zipstream": "0.2.1"
+    "zipstream": "0.2.1",
+    "archiver": "~0.4.8"
   },
   "devDependencies": {
     "mocha": "~1.10.0"

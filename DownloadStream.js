@@ -8,6 +8,11 @@ var inherits	= require('util').inherits,
 	archiver	= require('archiver');
 
 
+// TODO: 
+// implement https://npmjs.org/package/lazystream
+// to deal with `too many open files` issues that are likely to come up in production
+
+
 /**
  * Errors
  */
@@ -163,7 +168,9 @@ function DownloadStream () {
 
 		// if > 1 file is being downloaded,
 		// when they are all finished, the zip can be finalized at this point
-		this.zipstream.finalize(function(err, written) {
+		log('Finalizing zip of ' + fileCount + ' files...');
+		self.zipstream.finalize(function(err, written) {
+			log('Zip archive finalized!');
 			if (err) throw err;
 
 			console.log(written + ' total bytes written TO ZIP!!!');
@@ -177,6 +184,8 @@ function DownloadStream () {
 	 */
 
 	this.on('file', function (incomingFileStream) {
+
+		log('Discovered file :: ', incomingFileStream.filename);
 
 		// Manage file count and limits
 		if (limitFileCount && fileCount >= limitFileCount ) {
@@ -216,21 +225,23 @@ function DownloadStream () {
 
 			// Since multiple files are detected, create an archive
 			// and start zipping them up
-			this.zipstream = archive = archiver('zip');
-
-			// Replay buffered bytes of first file into zip
-			this.zipstream.append( firstFile , { name: firstFile.filename });
-			firstFile.resume();
+			this.zipstream = archiver('zip');
 
 			// Set up zipstream to pipe to download
 			this.zipstream.pipe(self);
 			this.zipstream.on('error', function(err) {
 			  throw err;
 			});
+
+			// Replay buffered bytes of first file into zip
+			log('Writing ' + firstFile.filename + ' to zipstream...');
+			this.zipstream.append( firstFile , { name: firstFile.filename });
+			firstFile.resume();
 		}
 
 
 		// For every file discovered after the first, just zip and stream it
+		log('Writing ' + incomingFileStream.filename + ' to zipstream...');
 		this.zipstream.append( incomingFileStream , { name: incomingFileStream.filename });
 
 	});

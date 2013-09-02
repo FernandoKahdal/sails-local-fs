@@ -129,7 +129,7 @@ module.exports = {
 			// Start buffering bytes that arrive
 			pausedStream.pause();
 
-			// Figure out file name and save reference as `name`
+			// Figure out file name and save reference as `filename`
 			pausedStream.filename = pausedStream.path.match(/\/([^/]+)\/?$/)[1];
 
 			// Notify downloadStream that a new file has come in
