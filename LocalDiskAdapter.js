@@ -6,12 +6,6 @@ var fs		= require('fs'),
 	Glob	= require('glob').Glob,
 	_		= require('lodash');
 
-// Grab a logger (use sails.log if available)
-var log = typeof sails !== 'undefined' ? sails.log : {
-	verbose: console.log,
-	warn: console.warn,
-	error: console.error
-};
 
 module.exports = {
 
@@ -21,6 +15,13 @@ module.exports = {
 	 */
 
 	write: function  ( uploadStream, options, cb ) {
+
+		// Grab a logger (use sails.log if available)
+		var log = typeof sails !== 'undefined' ? sails.log : {
+			verbose: console.log,
+			warn: console.warn,
+			error: console.error
+		};
 
 		// When the uploadStream ends or errors, trigger the callback
 		uploadStream.once('end', function (err) {
@@ -79,6 +80,13 @@ module.exports = {
 	 */
 
 	read: function (downloadStream, options, cb) {
+
+		// Grab a logger (use sails.log if available)
+		var log = typeof sails !== 'undefined' ? sails.log : {
+			verbose: console.log,
+			warn: console.warn,
+			error: console.error
+		};
 
 		// Makes callback optional, 
 		// and limits it to only fire once just in case

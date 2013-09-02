@@ -92,7 +92,7 @@ var Adapter = function (adapter) {
 			return cb(null, []);
 		}
 
-		console.log('\n\n******','Called upload using stream: ',uploadStream.fieldName || '*global*','\n\n********');
+		// console.log('\n\n******','Called upload using stream: ',uploadStream.fieldName || '*global*','\n\n********');
 
 
 		// If no container is set, default to '.tmp/' (in your app's cwd)
@@ -121,7 +121,7 @@ var Adapter = function (adapter) {
 		// Resume specified uploadStream, replaying its buffers and immediately
 		// receiving any queued signals.  This also allows us to receive file uploads
 		// which haven't happened yet
-		console.log('* adapter resuming upload stream...');
+		// console.log('* adapter resuming upload stream...');
 		uploadStream._resume();
 
 		// Return uploadStream to allow for chaining
