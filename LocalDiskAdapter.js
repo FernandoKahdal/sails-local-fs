@@ -79,7 +79,7 @@ module.exports = {
 	 * Read from blob store and write to specified download stream
 	 */
 
-	read: function (downloadStream, options, cb) {
+	read: function ( downloadStream, options, cb ) {
 
 		// Grab a logger (use sails.log if available)
 		var log = typeof sails !== 'undefined' ? sails.log : {
@@ -103,16 +103,17 @@ module.exports = {
 
 		// Handle end of the stream and errors
 		glob.once('abort', function globAborted () {
-			downloadStream.end();
+			downloadStream.emit('glob_abort');
 			cb();
 		});
 		glob.once('end', function globDone (matches) {
-			downloadStream.end(null, matches);
+			downloadStream.emit('glob_done', matches);
 			cb(null, matches);
 		});
 		glob.once('error', function globError (err) {
-			downloadStream.error(err || new Error());
-			cb(err || new Error());
+			err = err || new Error();
+			downloadStream.emit('glob_error', err);
+			cb(err);
 		});
 		
 		// Acquire source stream(s) one by one
@@ -121,9 +122,11 @@ module.exports = {
 			log.verbose('Found file @', path);
 
 			// Pass byte stream to download stream
-			downloadStream.emit('file', fs.createReadStream(path, {
+			var pausedStream = fs.createReadStream(path, {
 				encoding: options.encoding
-			}));
+			});
+			pausedStream.pause();
+			downloadStream.emit('file', pausedStream);
 
 		});
 

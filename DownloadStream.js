@@ -45,6 +45,19 @@ module.exports = DownloadStream;
 inherits(DownloadStream, Stream);
 function DownloadStream () {
 
+	this.writable = true;
+	_.bindAll(this);
+
+	// Grab a logger (use sails.log if available)
+	var log = typeof sails !== 'undefined' ? sails.log : {
+		verbose: console.log,
+		warn: console.warn,
+		error: console.error
+	};
+
+
+	var self = this;
+
 	// Keep track of # of files downloaded
 	var fileCount = 0;
 
@@ -53,39 +66,34 @@ function DownloadStream () {
 	// being a single file download is made.
 	var limitFileCount = false;
 
+	// Keep track of first file in case this is a single-file download
+	var firstFile;
+
+	// If the download timer expires, we must assume no other files are coming
+	// so send back the single file
+	var downloadTimer = setTimeout(function expire () {
+		log.verbose('Download timer expired-- only one file will be downloaded.');
+		self.onlyOneFile();
+	}, 50);
 
 
 	/**
 	 * Emit data
 	 */
 	this.write = function (data) {
+		log.verbose('Writing ' + (data && data.length) + 'bytes to download stream...');
 		var args = Array.prototype.slice.call(arguments, 0);
 		args.unshift('data');
 		this.emit.apply(this, args);
 	};
 
-	/**
-	 * If an error occurred, end the stream
-	 * If no files were found, end the stream
-	 */
-	this.end = function (err, matches) {
-		if (err) {
-			this.error(err);
-			return;
-		}
-
-		// Trigger 'notFound' behavior if no matches were found
-		if (!matches || !matches.length) {
-			this.emit('end');
-		}
-	};
-
 
 	/**
-	 * Server error occurred
+	 * End the stream
 	 */
-	this.error = function (err) {
-		this.emit('error', err);
+	this.end = function () {
+		log.verbose('Ending download stream...');
+		this.emit('end');
 	};
 
 	// File exceeds download count limit, 
@@ -97,7 +105,12 @@ function DownloadStream () {
 
 	// If no more files arive, start streaming the bytes 
 	// of the first file immediately
+	var fileDownloading = false;
 	this.onlyOneFile = function () {
+
+		// Mutex :: a file is being downloaded directly
+		if (fileDownloading) return;
+		fileDownloading = true;
 
 		// Clear download timer
 		clearTimeout(downloadTimer);
@@ -105,40 +118,40 @@ function DownloadStream () {
 		// Prevent any unexpected additional downloads from surprising us
 		limitFileCount = 1;
 
+		// If no files were uploaded, do nothing
+		if (!firstFile) {
+			return;
+		}
+
 		// Replay the buffered bytes onto the downloadStream
-		firstFile.pipe(this);
-		firstFile.resume();
+		else {
+			log.verbose('Replaying buffered bytes of file...');
+			firstFile.pipe(self);
+			firstFile.resume();
+		}
+
 	};
 
 
 
+	/**
+	 * Signal that all files have been found
+	 */
 
+	// this.once('glob_done', function noMoreFiles () {
 
+	// 	log('glob stream ended!');
+	// 	if (fileCount === 1) {
+	// 		this.onlyOneFile();
+	// 		return;
+	// 	}
 
+	// 	// if > 1 file is being downloaded,
+	// 	// when they are all finished, the zip can be finalized at this point
+	// 	throw new Error('Zip doesn\'t work yet!!!');
+	// 	// zip.finalize();
+	// });
 
-	// Keep track of first file in case this is a single-file download
-	var firstFile;
-
-
-	// If the download timer expires, we must assume no other files are coming
-	// so send back the single file
-	var downloadTimer = setTimeout(function expire () {
-		onlyOneFile();
-	}, 50);
-
-	// If the download (glob) stream ends
-	this.on('end', function () {
-
-		if (fileCount === 1) {
-			onlyOneFile();
-			return;
-		}
-
-		// if > 1 file is being downloaded,
-		// when they are all finished, the zip can be finalized at this point
-		throw new Error('Zip doesn\'t work yet!!!');
-		// zip.finalize();
-	});
 
 
 	/**
@@ -147,12 +160,20 @@ function DownloadStream () {
 
 	this.on('file', function (incomingFileStream) {
 
-		// If this is the first file
-		if (fileCount === 0) {
+		// Manage file count and limits
+		if (limitFileCount && fileCount >= limitFileCount ) {
+			return this.unexpectedFile();
+		}
+		fileCount++;
 
-			// Buffer and track it
+
+		// If this is the first file
+		if (fileCount === 1) {
+
+			// Track the stream
 			firstFile = incomingFileStream;
-			firstFile.pause();
+
+			log.verbose('Started buffering file stream...', incomingFileStream);
 			
 			// Continue buffering the first file until:
 			//
@@ -164,17 +185,10 @@ function DownloadStream () {
 			//	  so we download the first file
 		}
 
-
-		// Manage file count and limits
-		if (limitFileCount && fileCount >= limitFileCount ) {
-			return unexpectedFile();
-		}
-		fileCount++;
-
 		// If this is the second file, this is the moment where, for the first time,
 		// we can be certain that more than one file is being downloaded.
 		// Immediately stop buffering the first file and set up the .zip
-		if (fileCount === 2) {
+		else if (fileCount === 2) {
 			
 			// Clear download timer
 			// (since we are now sure that > 1 file is being downloaded)
