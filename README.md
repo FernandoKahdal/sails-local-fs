@@ -6,6 +6,9 @@
 
 Streaming binary upload/download adapter for a server's local filesystem
 
+
+For example, see: https://github.com/mikermcneil/stream-debug
+
 ## About Sails.js
 http://sailsjs.com
 
