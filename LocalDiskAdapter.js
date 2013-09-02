@@ -125,9 +125,15 @@ module.exports = {
 			var pausedStream = fs.createReadStream(path, {
 				encoding: options.encoding
 			});
-			pausedStream.pause();
-			downloadStream.emit('file', pausedStream);
 
+			// Start buffering bytes that arrive
+			pausedStream.pause();
+
+			// Figure out file name and save reference as `name`
+			pausedStream.filename = pausedStream.path.match(/\/([^/]+)\/?$/)[1];
+
+			// Notify downloadStream that a new file has come in
+			downloadStream.emit('file', pausedStream);
 		});
 
 		// return destination stream

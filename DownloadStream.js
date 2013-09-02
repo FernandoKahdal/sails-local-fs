@@ -5,7 +5,7 @@
 var inherits	= require('util').inherits,
 	Stream		= require('stream'),
 	_			= require('lodash'),
-	zipstream	= require('zipstream');
+	archiver	= require('archiver');
 
 
 /**
@@ -105,17 +105,13 @@ function DownloadStream () {
 
 	// If no more files arive, start streaming the bytes 
 	// of the first file immediately
-	var fileDownloading = false;
 	this.onlyOneFile = function () {
-
-		// Mutex :: a file is being downloaded directly
-		if (fileDownloading) return;
-		fileDownloading = true;
 
 		// Clear download timer
 		clearTimeout(downloadTimer);
 
 		// Prevent any unexpected additional downloads from surprising us
+		// (also serves as mutex)
 		limitFileCount = 1;
 
 		// If no files were uploaded, do nothing
@@ -132,25 +128,47 @@ function DownloadStream () {
 
 	};
 
+	// If no files were found,
+	this.noFiles = function () {
+		
+		// Clear download timer
+		clearTimeout(downloadTimer);
+
+		// emit a `notfound` event on the stream
+		self.emit('notfound');
+
+		// End stream
+		self.end();
+	};
+
 
 
 	/**
 	 * Signal that all files have been found
 	 */
 
-	// this.once('glob_done', function noMoreFiles () {
+	this.once('glob_done', function noMoreFiles () {
 
-	// 	log('glob stream ended!');
-	// 	if (fileCount === 1) {
-	// 		this.onlyOneFile();
-	// 		return;
-	// 	}
+		log.verbose('All matching files located.');
 
-	// 	// if > 1 file is being downloaded,
-	// 	// when they are all finished, the zip can be finalized at this point
-	// 	throw new Error('Zip doesn\'t work yet!!!');
-	// 	// zip.finalize();
-	// });
+		if (fileCount === 0) {
+			this.noFiles();
+			return;
+		}
+
+		if (fileCount === 1) {
+			this.onlyOneFile();
+			return;
+		}
+
+		// if > 1 file is being downloaded,
+		// when they are all finished, the zip can be finalized at this point
+		this.zipstream.finalize(function(err, written) {
+			if (err) throw err;
+
+			console.log(written + ' total bytes written TO ZIP!!!');
+		});
+	});
 
 
 
@@ -183,12 +201,14 @@ function DownloadStream () {
 			//	-or-
 			//	+ multiple download timeout expires (50ms) 
 			//	  so we download the first file
+
+			return;
 		}
 
 		// If this is the second file, this is the moment where, for the first time,
 		// we can be certain that more than one file is being downloaded.
 		// Immediately stop buffering the first file and set up the .zip
-		else if (fileCount === 2) {
+		if (fileCount === 2) {
 			
 			// Clear download timer
 			// (since we are now sure that > 1 file is being downloaded)
@@ -196,24 +216,22 @@ function DownloadStream () {
 
 			// Since multiple files are detected, create an archive
 			// and start zipping them up
-			throw new Error('Zip doesn\'t work yet!!!');
+			this.zipstream = archive = archiver('zip');
 
 			// Replay buffered bytes of first file into zip
+			this.zipstream.append( firstFile , { name: firstFile.filename });
+			firstFile.resume();
 
-			// Zip and stream each subsequent file
-			// var zip = zipstream.createZip({ level: 1 });
-			// zip.addFile(fs.createReadStream('README.md'), { name: 'README.md' }, function() {
-			//   zip.addFile(fs.createReadStream('example.js'), { name: 'example.js'  }, function() {
-			//     zip.finalize(function(written) { console.log(written + ' total bytes written'); });
-			//   });
-			// });
-			// zip.pipe(outputStream);
+			// Set up zipstream to pipe to download
+			this.zipstream.pipe(self);
+			this.zipstream.on('error', function(err) {
+			  throw err;
+			});
 		}
 
-		// For each subsequent file, zip and stream
-		else {
-			throw new Error('Zip doesn\'t work yet!!!');
-		}
+
+		// For every file discovered after the first, just zip and stream it
+		this.zipstream.append( incomingFileStream , { name: incomingFileStream.filename });
 
 	});
 
