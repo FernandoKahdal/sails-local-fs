@@ -249,9 +249,8 @@ function DownloadStream () {
 
 			// Replay buffered bytes of first file into zip
 			log('Writing ' + firstFile.filename + ' to zipstream...');
-			this.zipstream.append( firstFile , { name: firstFile.filename }, function (err) {
-				console.log('First file (' + firstFile.filename + ') written successfully!', err);
-			});
+			this.zipstream.append( firstFile , { name: firstFile.filename });
+			log('Replaying buffered bytes and zipping the rest of the first file...');
 			// firstFile.resume();
 		}
 
