@@ -4,7 +4,8 @@
 
 var _		= require('lodash'),
 	Stream	= require('stream'),
-	DownloadStream = require('./DownloadStream');
+	DownloadStream = require('./DownloadStream'),
+	isValidStream = require('./isValidStream');
 
 var errors = {
 
@@ -87,12 +88,10 @@ var Adapter = function (adapter) {
 		}
 		cb = cb || function () {};
 
-		// No upload stream means no files
-		if (!uploadStream) {
+		// No valid upload stream means no files
+		if ( ! isValidStream(uploadStream) ) {
 			return cb(null, []);
 		}
-
-		// console.log('\n\n******','Called upload using stream: ',uploadStream.fieldName || '*global*','\n\n********');
 
 
 		// If no container is set, default to '.tmp/' (in your app's cwd)
@@ -112,6 +111,8 @@ var Adapter = function (adapter) {
 
 		// Apply options to upload stream
 		_.extend(uploadStream, options);
+
+		// console.log('\n\n', 'uploadstream:',uploadStream);
 
 		// Call the wrapped adapter upload logic
 		////////////////////////////////////////////////////////////
