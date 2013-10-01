@@ -1,12 +1,19 @@
 /*---------------------------------------------------------------
-	:: FileSystemAdapter
-	-> adapter
+	:: Local Filesystem Adapter
+	:: sails-local-fs
+	::
 
 	Primarily, this adapter is useful for uploading user files 
 	to the local hard disk on the server.  Note that you'll be
-	limited to the space available on your filesystem!  However,
-	you can use any accessible directory, including mounted
-	network drives, etc.
+	limited to the space available on your filesystem!
+
+	Also, if you are scaling to multiple servers behind some
+	kind of load balancer, you'll need to share some kind of
+	file store, rather than using the local disk on each machine
+	(since a user might upload a file to one server, then try
+	to download it from another.) However, you can use any
+	accessible directory, including mounted network drives, etc.
+	which alleviates this limitation.
 
 ---------------------------------------------------------------*/
 
