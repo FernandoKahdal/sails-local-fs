@@ -45,7 +45,7 @@ module.exports = (function () {
 			};
 
 			// When the uploadStream ends or errors, trigger the callback
-			uploadStream.once('end', function (err) {
+			uploadStream.once('end', function noMoreFiles (err) {
 
 				if (err) {
 
@@ -68,12 +68,27 @@ module.exports = (function () {
 
 			// Listen to upload stream for new files
 			// Receive each upload as a paused field stream
-			uploadStream.on('data', function (pausedBinaryStream) {
+			uploadStream.on('data', function receiveNewFile (pausedBinaryStream) {
 
 				// Build full path and open writestream for this file
 				var filename = pausedBinaryStream.filename;
 				var path = options.container + filename;
 				var destinationStream = fs.createWriteStream( path );
+				
+				// Handle errors writing thru adapter
+				// (e.g. destination path does not exist)
+				destinationStream.on('error', function onWriteError ( e ) {
+					// `e instanceof Error`
+
+					// Friendly-ize known errors
+					if (e.code === 'ENOENT' && e.path) {
+						e.message = 'Could not write file to ' + e.path;
+					}
+
+					// Emit errors back up the uploadStream
+					uploadStream.emit('end', e);
+					return;
+				});
 
 				// Update uploadStream's reference to this file
 				// with adapter-specific information

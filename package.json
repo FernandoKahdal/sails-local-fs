@@ -26,8 +26,7 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "lodash": "1.2.1",
-    "glob": "3.2.6",
-    "waterline-blob": "git://github.com/balderdashy/waterline-blob.git"
+    "glob": "3.2.6"
   },
   "devDependencies": {
     "mocha": "~1.10.0"
