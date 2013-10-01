@@ -113,9 +113,11 @@ module.exports = (function () {
 
 				// Update uploadStream's reference to this file
 				// with adapter-specific information
-				// (namely the path)
 				var fileRecord = uploadStream.files[pausedBinaryStream._id];
 				fileRecord.path = path;
+
+				// Update uploadStream to include blobName
+				fileRecord.blobName = blobName;
 
 				log.verbose('* ' + downloadName + ' :: Adapter received new file...');
 				log.verbose('* Wrote to disk as ' + blobName + '...');
