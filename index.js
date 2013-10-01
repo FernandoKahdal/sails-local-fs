@@ -70,9 +70,12 @@ module.exports = (function () {
 			// Receive each upload as a paused field stream
 			uploadStream.on('data', function receiveNewFile (pausedBinaryStream) {
 
+				// Determine blobName (using `saveAs`)
+				var downloadName = pausedBinaryStream.filename;
+				var blobName = options.saveAs(downloadName);
+
 				// Build full path and open writestream for this file
-				var filename = pausedBinaryStream.filename;
-				var path = options.container + filename;
+				var path = options.container + blobName;
 				var destinationStream = fs.createWriteStream( path );
 				
 				// Handle errors writing thru adapter
@@ -96,7 +99,8 @@ module.exports = (function () {
 				var fileRecord = uploadStream.files[pausedBinaryStream._id];
 				fileRecord.path = path;
 
-				log.verbose('* ' + filename + ' :: Adapter received new file...');
+				log.verbose('* ' + downloadName + ' :: Adapter received new file...');
+				log.verbose('* Wrote to disk as ' + blobName + '...');
 				
 				// Hook up the data events from the field streams 
 				// to the destination stream
@@ -104,7 +108,7 @@ module.exports = (function () {
 				
 				// Resume field streams detected so far 
 				// and replay their buffers
-				log.verbose('* ' + filename + ' :: resuming stream...');
+				log.verbose('* ' + downloadName + ' :: resuming stream...');
 				pausedBinaryStream._resume();
 			});
 		},
