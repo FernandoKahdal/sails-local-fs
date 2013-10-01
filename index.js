@@ -5,7 +5,7 @@
 var fs			= require('fs'),
 	Glob		= require('glob').Glob,
 	_			= require('lodash'),
-	BlobFactory	= require('waterline-blob');
+	BlobFactory	= require('waterline-blob');	// TODO: merge `waterline-blob` into waterline core
 
 
 /*---------------------------------------------------------------

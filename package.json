@@ -26,10 +26,7 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "lodash": "1.2.1",
-    "glob": "3.2.6",
-    "zipstream": "0.2.1",
-    "archiver": "~0.4.8",
-    "mime": "~1.2.11"
+    "glob": "3.2.6"
   },
   "devDependencies": {
     "mocha": "~1.10.0"
