@@ -27,7 +27,12 @@ var fs			= require('fs'),
 
 ---------------------------------------------------------------*/
 module.exports = (function () {
+
+	// Constants
+	var MAX_PATH = 260,
+		MAX_FILENAME = 255;
 	
+
 	return BlobFactory({
 
 
@@ -71,11 +76,24 @@ module.exports = (function () {
 			uploadStream.on('data', function receiveNewFile (pausedBinaryStream) {
 
 				// Determine blobName (using `saveAs`)
+				// Then build path
 				var downloadName = pausedBinaryStream.filename;
 				var blobName = options.saveAs(downloadName);
-
-				// Build full path and open writestream for this file
 				var path = options.container + blobName;
+
+				// Ensure that container + blobName doesn't exceed max path length
+				if (path.length > MAX_PATH) {
+					uploadStream.emit('end', new Error('Path (container + filename) too long (' + path.length + ' characters!) :: ' + path));
+					return;
+				}
+
+				// Ensure that blobName doesn't exceed max filename length
+				if (blobName.length > MAX_FILENAME) {
+					uploadStream.emit('end', new Error('Filename too long (' + blobName.length + ' characters!) :: ' + blobName));
+					return;
+				}
+				
+				// Build full path and open writestream for this file
 				var destinationStream = fs.createWriteStream( path );
 				
 				// Handle errors writing thru adapter
