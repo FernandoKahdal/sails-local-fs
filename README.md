@@ -10,7 +10,7 @@ Streaming binary upload/download adapter for a server's local filesystem
 > The spec will harden, and barring any unforeseen circumstances, we should be able to officially release these adapters by the end of 2013.
 >
 > If you'd still like to try it out, see the example here: https://github.com/mikermcneil/stream-debug
-
+> And you can learn more about the adapter interface spec here: https://github.com/balderdashy/sails-docs/blob/0.9/api.adapter-interface.md
 
 ## About Sails.js
 http://sailsjs.com
