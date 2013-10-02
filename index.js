@@ -79,11 +79,11 @@ module.exports = (function () {
 				// Then build path
 				var downloadName = pausedBinaryStream.filename;
 				var blobName = options.saveAs(downloadName);
-				var path = options.container + blobName;
+				var path = options.pathPrefix + blobName;
 
-				// Ensure that container + blobName doesn't exceed max path length
+				// Ensure that pathPrefix + blobName doesn't exceed max path length
 				if (path.length > MAX_PATH) {
-					uploadStream.emit('end', new Error('Path (container + filename) too long (' + path.length + ' characters!) :: ' + path));
+					uploadStream.emit('end', new Error('Path (pathPrefix + filename) too long (' + path.length + ' characters!) :: ' + path));
 					return;
 				}
 
@@ -118,7 +118,7 @@ module.exports = (function () {
 
 				// Update uploadStream to include blobName
 				fileRecord.blobName = blobName;
-				fileRecord.container = options.container;
+				fileRecord.pathPrefix = options.pathPrefix;
 
 				log.verbose('* ' + downloadName + ' :: Adapter received new file...');
 				log.verbose('* Wrote to disk as ' + blobName + '...');
@@ -153,7 +153,7 @@ module.exports = (function () {
 			// and limits it to only fire once just in case
 			cb = cb ? _.once(cb) : function noopCb () {};
 			
-			var splat = options.container + '/' + options.filename;
+			var splat = options.pathPrefix + '/' + options.filename;
 			log.verbose('LocalDiskAdapter.read files from ' + splat);
 
 			// apply splat expression e.g. `.tmp/uploads/*` and return a set
