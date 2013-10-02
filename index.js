@@ -118,6 +118,7 @@ module.exports = (function () {
 
 				// Update uploadStream to include blobName
 				fileRecord.blobName = blobName;
+				fileRecord.container = options.container;
 
 				log.verbose('* ' + downloadName + ' :: Adapter received new file...');
 				log.verbose('* Wrote to disk as ' + blobName + '...');
