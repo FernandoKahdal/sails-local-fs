@@ -103,7 +103,10 @@ module.exports = (function () {
 
 					// Friendly-ize known errors
 					if (e.code === 'ENOENT' && e.path) {
-						e.message = 'Could not write file to ' + e.path;
+						e.message = 'Could not write file to disk because parent directory for "' + e.path + '" does not exist.';
+					}
+					else if (e.code === 'EACCES' && e.path) {
+						e.message = 'Could not write file to disk because this Node process does not have permission to write to  "' + e.path + '"';
 					}
 
 					// Emit errors back up the uploadStream
