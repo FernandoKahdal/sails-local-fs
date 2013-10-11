@@ -5,6 +5,7 @@
 var fs			= require('fs'),
 	Glob		= require('glob').Glob,
 	_			= require('lodash'),
+	nodepath	= require('path'),
 	BlobFactory	= require('waterline-blob');	// TODO: merge `waterline-blob` into waterline core
 
 
@@ -85,7 +86,18 @@ module.exports = (function () {
 				// Then build path
 				var downloadName = pausedBinaryStream.filename;
 				var blobName = options.saveAs(downloadName);
+
+				// Get absolute path to file
+				// TODO:
+				// If a leading slash is detected, assume absolute path
+				// otherwise assume relative to the project directory
+				// Doing this properly is actually kind of hard b/c we have to figure out
+				// how to get the project directory in the adapter
+				//
+				// For now, we'll build the path relative to process.cwd()
 				var path = options.pathPrefix + '/' + blobName;
+				path = nodepath.resolve(path);
+				
 
 				// Ensure that pathPrefix + blobName doesn't exceed max path length
 				if (path.length > MAX_PATH) {
@@ -128,6 +140,7 @@ module.exports = (function () {
 				// Update uploadStream to include blobName
 				fileRecord.blobName = blobName;
 				fileRecord.pathPrefix = options.pathPrefix;
+				fileRecord.url = 'file://' + fileRecord.path;
 
 				log.verbose('* ' + downloadName + ' :: Adapter received new file...');
 				log.verbose('* Wrote to disk as ' + blobName + '...');
@@ -197,6 +210,7 @@ module.exports = (function () {
 				});
 
 				// Start buffering bytes that arrive
+				// TODO: figure out what's going on here
 				// pausedStream.pause();
 
 				// Figure out file name and save reference as `filename`
