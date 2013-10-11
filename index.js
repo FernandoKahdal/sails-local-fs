@@ -31,9 +31,15 @@ module.exports = (function () {
 	// Constants
 	var MAX_PATH = 260,
 		MAX_FILENAME = 255;
-	
+
+
 
 	return BlobFactory({
+
+		// App-wide defaults for this adapter
+		defaults: {
+			pathPrefix: ''
+		},
 
 
 		/**
@@ -79,7 +85,7 @@ module.exports = (function () {
 				// Then build path
 				var downloadName = pausedBinaryStream.filename;
 				var blobName = options.saveAs(downloadName);
-				var path = options.pathPrefix + blobName;
+				var path = options.pathPrefix + '/' + blobName;
 
 				// Ensure that pathPrefix + blobName doesn't exceed max path length
 				if (path.length > MAX_PATH) {
