@@ -1,6 +1,6 @@
 {
   "name": "sails-local-fs",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "Local filesystem streaming binary adapter for Sails.js / Waterline",
   "main": "index.js",
   "scripts": {
